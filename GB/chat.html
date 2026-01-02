@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Page</title>
+    <style>
+        /* CSS 样式部分 - 保持你的原始样式完全不动 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 450px;
+            height: 80vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #0084ff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            /* 仅仅增加了这一行用于定位返回按钮 */
+            position: relative; 
+        }
+
+        /* 这是新增的返回按钮样式，为了配对你的 UI */
+        .back-link {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #ffffff;
+        }
+
+        .message {
+            display: flex;
+            width: 100%;
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .received {
+            justify-content: flex-start;
+        }
+        .received .bubble {
+            background: #e4e6eb;
+            color: #050505;
+            border-bottom-left-radius: 4px;
+        }
+
+        .sent {
+            justify-content: flex-end;
+        }
+        .sent .bubble {
+            background: #0084ff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            background: #fff;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        #userInput:focus {
+            border-color: #0084ff;
+        }
+
+        #sendBtn {
+            background: #0084ff;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        #sendBtn:hover {
+            background: #0073e6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="back-link" onclick="goBack()">返回</div>
+            在线客服助手
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message received">
+                <div class="bubble">您好！请问有什么我可以帮您的吗？</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="userInput" placeholder="请输入消息..." autocomplete="off">
+            <button id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <script>
+        // 新增的智能退出逻辑
+        function goBack() {
+            // 检查是从哪个页面过来的
+            const ref = document.referrer;
+            if (ref.includes("home.html")) {
+                window.location.href = "home.html";
+            } else {
+                // 如果是直接打开或者从 GB.html 过来，退回到登录页
+                window.location.href = "GB.html";
+            }
+        }
+
+        // JavaScript 原始逻辑部分 - 保持不动
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', type);
+            
+            messageDiv.innerHTML = `<div class="bubble">${text}</div>`;
+            chatMessages.appendChild(messageDiv);
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function handleSend() {
+            const text = userInput.value.trim();
+            if (text !== "") {
+                addMessage(text, 'sent');
+                userInput.value = '';
+                
+                setTimeout(() => {
+                    addMessage("这是客服自动回复，我们将尽快为您处理。", 'received');
+                }, 1000);
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSend();
+            }
+        });
+    </script>
+
+</body>
+</html>
