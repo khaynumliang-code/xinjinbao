@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新金宝 - Official Login</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * { 
+            box-sizing: border-box; margin: 0; padding: 0; 
+            user-select: none; -webkit-user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        body, html { 
+            height: 100%; width: 100%; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; 
+            background: #000 url('bg2.jpg') no-repeat center center fixed; 
+            background-size: cover;
+        }
+        
+        #particles-canvas, #magic-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #particles-canvas { z-index: 2; }
+        #magic-canvas { z-index: 4; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.45); z-index: 1; }
+
+        /* --- 新增：登录框入场动画 --- */
+        @keyframes boxPopIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(40px);
+            }
+            60% {
+                transform: scale(1.05) translateY(-10px);
+            }
+            80% {
+                transform: scale(0.98) translateY(2px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .login-box { 
+            position: relative; background: rgba(255, 255, 255, 0.04); 
+            padding: 45px 40px; border-radius: 35px; 
+            text-align: center; width: 380px; 
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6); z-index: 10;
+            
+            /* 应用入场动画：持续0.8秒，贝塞尔曲线增加灵动感 */
+            animation: boxPopIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .logo-img { width: 120px; height: auto; margin-bottom: 5px; display: block; margin-left: auto; margin-right: auto; pointer-events: none; }
+
+        .golden-text {
+            font-size: 40px; font-weight: 900; margin-bottom: 25px;
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-size: 200% auto; display: block;
+            animation: shine 3s linear infinite, livelyPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes shine { to { background-position: 200% center; } }
+        @keyframes livelyPulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+            50% { transform: scale(1.05); filter: brightness(1.2); text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        }
+
+        input[type="text"], input[type="password"] { 
+            width: 100%; padding: 15px; margin: 12px 0; border-radius: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.12); 
+            background: rgba(255, 255, 255, 0.07); 
+            color: white; outline: none; transition: 0.3s;
+            user-select: text; -webkit-user-select: text;
+        }
+
+        .options-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin: 20px 0; color: rgba(255, 255, 255, 0.95);
+        }
+        .checkbox-group { 
+            display: flex; align-items: center; cursor: pointer; 
+            font-size: 16px; font-weight: 600;
+        }
+        .checkbox-group input { 
+            width: 20px; height: 20px; margin-right: 10px; cursor: pointer; accent-color: #fbc02d; 
+        }
+        .agreement-link { color: #ff5252; text-decoration: none; margin-left: 5px; font-weight: bold; }
+
+        button { 
+            width: 100%; padding: 15px; margin-top: 15px; 
+            background: linear-gradient(135deg, #fbc02d, #f57f17); 
+            border: none; border-radius: 15px; cursor: pointer; 
+            font-weight: bold; font-size: 18px; color: #211a00; 
+            transition: 0.1s;
+        }
+        button:active, button.active-click { transform: scale(0.92); }
+        button:disabled { background: #444; color: #777; cursor: not-allowed; opacity: 0.6; }
+
+        #message { margin-top: 15px; color: #ffbf00; font-size: 14px; min-height: 20px; }
+
+        .chat-wrapper { position: fixed; bottom: 30px; right: 30px; display: flex; align-items: center; z-index: 100; }
+        .chat-label { background: rgba(0, 0, 0, 0.7); color: #ffffff; padding: 10px 20px; border-radius: 25px; margin-right: 12px; font-size: 16px; font-weight: bold; backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.2); display: inline-flex; align-items: center; pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .pointing-hand { display: inline-block; margin-left: 8px; font-size: 20px; vertical-align: middle; animation: pointMove 0.8s infinite alternate ease-in-out; }
+        @keyframes pointMove { from { transform: translateX(0); } to { transform: translateX(8px); } }
+        .floating-chat-btn { width: 65px; height: 65px; background: linear-gradient(135deg, #00c6ff, #0072ff); border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 10px 25px rgba(0, 114, 255, 0.4); border: 2px solid rgba(255, 255, 255, 0.4); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .floating-chat-btn:hover { transform: scale(1.1) rotate(5deg); }
+        .chat-icon { width: 38px; height: 38px; fill: white; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+    </style>
+</head>
+<body>
+    <div class="overlay"></div>
+    <canvas id="particles-canvas"></canvas>
+    <canvas id="magic-canvas"></canvas>
+
+    <div class="login-box">
+        <img src="my_photo.jpg" alt="Logo" class="logo-img" draggable="false" onerror="this.style.display='none'">
+        <span class="golden-text">新金宝</span>
+        
+        <input type="text" id="username" placeholder="账号">
+        <input type="password" id="password" placeholder="密码">
+
+        <div class="options-container">
+            <label class="checkbox-group">
+                <input type="checkbox" id="agreeCheck" onchange="toggleLoginBtn()">
+                我同意 <a href="#" class="agreement-link">《服务与条款》</a>
+            </label>
+            <label class="checkbox-group">
+                <input type="checkbox" id="rememberCheck">
+                记住账号
+            </label>
+        </div>
+
+        <button id="loginBtn" onclick="checkLogin()" disabled>登录</button>
+        <div id="message"></div>
+    </div>
+
+    <div class="chat-wrapper">
+        <div class="chat-label">在线客服 <span class="pointing-hand">👉</span></div>
+        <a href="chat.html" class="floating-chat-btn" draggable="false">
+            <svg class="chat-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM16 11V9.5C16 7.57 14.21 6 12 6C9.79 6 8 7.57 8 9.5V11C7.45 11 7 11.45 7 12V15C7 15.55 7.45 16 8 16H9V11H8V9.5C8 8.12 9.79 7 12 7C14.21 7 16 8.12 16 9.5V11H15V16H16C16.55 16 17 15.55 17 15V12C17 11.45 16.55 11 16 11Z"/></svg>
+        </a>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const savedUser = localStorage.getItem("remembered_user");
+            const savedPass = localStorage.getItem("remembered_pass");
+            if (savedUser) { document.getElementById("username").value = savedUser; document.getElementById("rememberCheck").checked = true; }
+            if (savedPass) { document.getElementById("password").value = savedPass; }
+        };
+
+        function toggleLoginBtn() {
+            const isAgreed = document.getElementById("agreeCheck").checked;
+            document.getElementById("loginBtn").disabled = !isAgreed;
+        }
+
+        document.addEventListener("keypress", function(e) { 
+            const loginBtn = document.getElementById("loginBtn");
+            if (e.key === "Enter" && !loginBtn.disabled) { 
+                loginBtn.classList.add("active-click");
+                setTimeout(() => loginBtn.classList.remove("active-click"), 100);
+                checkLogin(); 
+            } 
+        });
+
+        const pCanvas = document.getElementById('particles-canvas');
+        const pCtx = pCanvas.getContext('2d');
+        const mCanvas = document.getElementById('magic-canvas');
+        const mCtx = mCanvas.getContext('2d');
+        let particles = [], magicParticles = [];
+        function resize() { pCanvas.width = mCanvas.width = window.innerWidth; pCanvas.height = mCanvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        class Snowflake {
+            constructor() { this.init(true); }
+            init(firstLoad = false) {
+                this.x = Math.random() * pCanvas.width;
+                this.y = firstLoad ? Math.random() * pCanvas.height : -10;
+                this.size = Math.random() * 2 + 0.5;
+                this.speed = Math.random() * 1 + 0.5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.wind = Math.random() * 0.4 - 0.2;
+            }
+            update() { this.y += this.speed; this.x += this.wind; if (this.y > pCanvas.height) this.init(false); }
+            draw() { pCtx.globalAlpha = this.opacity; pCtx.fillStyle = '#ffffff'; pCtx.beginPath(); pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2); pCtx.fill(); }
+        }
+        for (let i = 0; i < 200; i++) particles.push(new Snowflake());
+        window.addEventListener('mousemove', (e) => {
+            for(let i=0; i<3; i++) { magicParticles.push({ x: e.clientX, y: e.clientY, size: Math.random() * 2 + 1, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, opacity: 1 }); }
+        });
+        function animate() {
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            magicParticles.forEach((mp, i) => {
+                mp.x += mp.vx; mp.y += mp.vy; mp.opacity -= 0.02;
+                mCtx.globalAlpha = mp.opacity; mCtx.fillStyle = "gold";
+                mCtx.beginPath(); mCtx.arc(mp.x, mp.y, mp.size, 0, Math.PI * 2); mCtx.fill();
+                if(mp.opacity <= 0) magicParticles.splice(i, 1);
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDKxLx3QuLqixCWcagTZw0ibGtPDGoPwJg", authDomain: "gb-casino.firebaseapp.com", 
+            projectId: "gb-casino", databaseURL: "https://gb-casino-default-rtdb.firebaseio.com" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        async function checkLogin() {
+            const user = document.getElementById("username").value.trim();
+            const pass = document.getElementById("password").value.trim();
+            const isRemember = document.getElementById("rememberCheck").checked;
+            const messageBox = document.getElementById("message");
+
+            if (!user || !pass) { messageBox.innerText = "请输入账号 and 密码"; return; }
+
+            try {
+                if (!auth.currentUser) await auth.signInAnonymously();
+                const snapshot = await database.ref('users/' + user).once('value');
+                const userData = snapshot.val();
+                
+                if (userData && String(userData.password) === String(pass)) { 
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                    localStorage.setItem("isLoggedIn", "true"); 
+                    if (isRemember) { 
+                        localStorage.setItem("remembered_user", user);
+                        localStorage.setItem("remembered_pass", pass); 
+                    } else { 
+                        localStorage.removeItem("remembered_user");
+                        localStorage.removeItem("remembered_pass"); 
+                    }
+                    localStorage.setItem("chat_username", user); 
+                    messageBox.style.color = "#00ffaa"; messageBox.innerText = "登录成功";
+                    setTimeout(() => { window.location.href = "home.html"; }, 1500);
+                } else { 
+                    messageBox.style.color = "#ff4d4d"; messageBox.innerText = "登录错误"; 
+                }
+            } catch (error) { 
+                messageBox.innerText = "Error: " + error.message; 
+            }
+        }
+    </script>
+</body>
+</html>
